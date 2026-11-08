@@ -5,6 +5,8 @@
 name: Screenshots
 
 on:
+    push:
+        branches: [ screenshots/92-stop-flock ]
     workflow_dispatch:
 
 permissions:
