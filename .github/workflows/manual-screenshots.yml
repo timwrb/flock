@@ -27,7 +27,7 @@ jobs:
                     dotnet build windows/Flock.Screenshots -c Release -p:Platform=x64
                     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                     $exe = Get-ChildItem windows/Flock.Screenshots/bin/x64/Release -Recurse -Filter Flock.Screenshots.exe | Select-Object -First 1
-                    & $exe.FullName --out screenshots
+                    & $exe.FullName --out screenshots --only panel-running
                     exit $LASTEXITCODE
 
             -   uses: actions/upload-artifact@v7
@@ -37,19 +37,27 @@ jobs:
                     path: screenshots/*.png
                     if-no-files-found: error
 
-    macos:
-        name: macOS
-        runs-on: macos-26
+    linux:
+        name: Linux
+        runs-on: ubuntu-24.04
         steps:
             -   uses: actions/checkout@v7
 
-            # A debug build: FlockScreenshots reaches the app's views through @testable import.
+            -   name: Install GTK
+                run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libgtk-4-dev libadwaita-1-dev libwebkitgtk-6.0-dev xvfb
+
             -   name: Render
-                run: swift run --package-path macos FlockScreenshots --out screenshots
+                env:
+                    GSK_RENDERER: cairo
+                    GDK_BACKEND: x11
+                run: |
+                    for theme in light dark; do
+                        xvfb-run -a cargo run --manifest-path linux/Cargo.toml --features screenshots -- --screenshots --out screenshots --only panel-running --theme $theme
+                    done
 
             -   uses: actions/upload-artifact@v7
                 if: always()
                 with:
-                    name: screenshots-macos
+                    name: screenshots-linux
                     path: screenshots/*.png
                     if-no-files-found: error
